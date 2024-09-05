@@ -1,0 +1,49 @@
+body {
+	text-align: center;
+	font-family: "Questrial", sans-serif;
+	font-weight: 100;
+	color: #2D004B;
+	padding: 0 25%;
+	/* ensure all text is padded on the left and right by 100 px */
+	margin: 10px;
+	font-size: 14px;
+
+
+
+}
+
+
+/* Main font color set to white*/
+h1, h2, h3, h4, h5, h6, p, a, li, ul, span, div {
+	color: #2D004B;
+	font-family: "Questrial", sans-serif;
+}
+
+h1 {
+	font-size: 30;
+	color: #2D004B;
+}
+
+h2 {
+	font-size: 20;
+}
+
+
+a {
+	text-decoration: none;
+	color: #b83e02;
+}
+
+
+a:hover {
+		color: #32147d; /* Changes link color on hover for a better user experience */
+	}
+
+.footer {
+		position: fixed;
+		bottom: 0;
+		width: 100%;
+		text-align: center;
+		font-size: 14px;
+		color: #ccc;
+	}
