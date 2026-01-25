@@ -1,0 +1,431 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="UTF-8">
+  <title>Joshua Brendan Melander</title>
+  <style>
+    body {
+      background: #000;
+      color: #ccc;
+      font-family: "Courier New", monospace;
+      font-size: 14px;
+      margin: 0;
+      padding: 20px;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+    }
+
+    a { color: #0ff; }
+    a:visited { color: #f9f; }
+
+    h2 {
+      color: #ff0;
+      font-size: 16px;
+      margin-top: 30px;
+    }
+
+    hr {
+      border: none;
+      border-top: 1px dashed #444;
+      margin: 20px 0;
+      width: 100%;
+      max-width: 600px;
+    }
+
+    .content {
+      max-width: 600px;
+      width: 100%;
+    }
+
+    .gol-container {
+      position: relative;
+    }
+
+    #golCanvas {
+      display: block;
+      cursor: crosshair;
+    }
+
+    .controls {
+      position: absolute;
+      bottom: 10px;
+      right: 10px;
+      display: flex;
+      gap: 5px;
+    }
+
+    .ctrl-btn {
+      width: 32px;
+      height: 32px;
+      background: transparent;
+      border: 1px solid #333;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      transition: border-color 0.2s;
+    }
+
+    .ctrl-btn:hover {
+      border-color: #0f0;
+    }
+
+    .ctrl-btn svg {
+      fill: #0f0;
+    }
+
+    .pause-icon {
+      display: none;
+    }
+
+    .ctrl-btn.playing .play-icon {
+      display: none;
+    }
+
+    .ctrl-btn.playing .pause-icon {
+      display: block;
+    }
+
+    .email { color: #f60; }
+
+    ul {
+      margin: 10px 0;
+      padding-left: 25px;
+    }
+
+    li { margin: 5px 0; }
+
+    .footer {
+      margin-top: 40px;
+      font-size: 11px;
+      color: #444;
+    }
+  </style>
+</head>
+<body>
+
+<div class="gol-container">
+  <canvas id="golCanvas"></canvas>
+  <div class="controls">
+    <button class="ctrl-btn" id="resetBtn" title="Reset">
+      <svg width="12" height="12" viewBox="0 0 12 12">
+        <path d="M6 0v3l-4-1.5L6 0zM6 1.5A4.5 4.5 0 1 1 1.5 6H0a6 6 0 1 0 6-6v1.5z"/>
+      </svg>
+    </button>
+    <button class="ctrl-btn" id="playBtn" title="Play/Pause">
+      <svg class="play-icon" width="12" height="14" viewBox="0 0 12 14">
+        <polygon points="0,0 12,7 0,14"/>
+      </svg>
+      <svg class="pause-icon" width="10" height="14" viewBox="0 0 10 14">
+        <rect x="0" y="0" width="3" height="14"/>
+        <rect x="7" y="0" width="3" height="14"/>
+      </svg>
+    </button>
+  </div>
+</div>
+
+<hr>
+
+<div class="content">
+  <h2>// ABOUT</h2>
+  <p>
+  Post-doc in Pasca Lab, Stanford University studying neural coding in the visual system. PhD in Neuroscience from NYU (2019) with Michael Shadlen on decision-making in parietal cortex.
+  </p>
+  <p>
+    Email: <span class="email">jmelander [at] stanford [dot] edu</span>
+  </p>
+
+  <h2>// RESEARCH</h2>
+  <ul>
+    <li>Retinal encoding of natural image statistics</li>
+    <li>Population dynamics in primary visual cortex</li>
+    <li>Predictive coding and efficient representation</li>
+  </ul>
+
+  <h2>// PAPERS</h2>
+  <ul>
+    <li>"Neural coding of natural scenes in mouse V1" - in prep</li>
+    <li>"Eye tracking in head-fixed mice during VR navigation" - SfN 2025</li>
+  </ul>
+
+  <h2>// LINKS</h2>
+  <ul>
+    <li><a href="#">Lab website</a></li>
+    <li><a href="#">Google Scholar</a></li>
+    <li><a href="#">GitHub</a></li>
+  </ul>
+
+  <div class="footer">
+    last updated jan 2026
+  </div>
+</div>
+
+<script>
+const canvas = document.getElementById('golCanvas');
+const ctx = canvas.getContext('2d');
+const cellSize = 4;
+
+canvas.width = 600;
+canvas.height = 200;
+
+const cols = Math.floor(canvas.width / cellSize);
+const rows = Math.floor(canvas.height / cellSize);
+
+let grid = Array(cols).fill().map(() => Array(rows).fill(0));
+let running = false;
+
+const font = {
+  'J': [
+    '  ###',
+    '    #',
+    '    #',
+    '    #',
+    '#   #',
+    '#   #',
+    ' ### ',
+  ],
+  'O': [
+    ' ### ',
+    '#   #',
+    '#   #',
+    '#   #',
+    '#   #',
+    '#   #',
+    ' ### ',
+  ],
+  'S': [
+    ' ####',
+    '#    ',
+    '#    ',
+    ' ### ',
+    '    #',
+    '    #',
+    '#### ',
+  ],
+  'H': [
+    '#   #',
+    '#   #',
+    '#   #',
+    '#####',
+    '#   #',
+    '#   #',
+    '#   #',
+  ],
+  'U': [
+    '#   #',
+    '#   #',
+    '#   #',
+    '#   #',
+    '#   #',
+    '#   #',
+    ' ### ',
+  ],
+  'A': [
+    ' ### ',
+    '#   #',
+    '#   #',
+    '#####',
+    '#   #',
+    '#   #',
+    '#   #',
+  ],
+  'M': [
+    '#   #',
+    '## ##',
+    '# # #',
+    '# # #',
+    '#   #',
+    '#   #',
+    '#   #',
+  ],
+  'E': [
+    '#####',
+    '#    ',
+    '#    ',
+    '#### ',
+    '#    ',
+    '#    ',
+    '#####',
+  ],
+  'L': [
+    '#    ',
+    '#    ',
+    '#    ',
+    '#    ',
+    '#    ',
+    '#    ',
+    '#####',
+  ],
+  'N': [
+    '#   #',
+    '##  #',
+    '##  #',
+    '# # #',
+    '#  ##',
+    '#  ##',
+    '#   #',
+  ],
+  'D': [
+    '#### ',
+    '#   #',
+    '#   #',
+    '#   #',
+    '#   #',
+    '#   #',
+    '#### ',
+  ],
+  'R': [
+    '#### ',
+    '#   #',
+    '#   #',
+    '#### ',
+    '# #  ',
+    '#  # ',
+    '#   #',
+  ],
+  'B': [
+    '#### ',
+    '#   #',
+    '#   #',
+    '#### ',
+    '#   #',
+    '#   #',
+    '#### ',
+  ],
+  ' ': [
+    '     ',
+    '     ',
+    '     ',
+    '     ',
+    '     ',
+    '     ',
+    '     ',
+  ],
+};
+
+function drawText(text, startX, startY) {
+  let offsetX = startX;
+  for (const char of text) {
+    const letter = font[char.toUpperCase()];
+    if (letter) {
+      for (let row = 0; row < letter.length; row++) {
+        for (let col = 0; col < letter[row].length; col++) {
+          if (letter[row][col] === '#') {
+            const x = offsetX + col;
+            const y = startY + row;
+            if (x >= 0 && x < cols && y >= 0 && y < rows) {
+              grid[x][y] = 1;
+            }
+          }
+        }
+      }
+      offsetX += 6;
+    }
+  }
+}
+
+function initName() {
+  grid = Array(cols).fill().map(() => Array(rows).fill(0));
+  
+  const lines = ["JOSHUA", "BRENDAN", "MELANDER"];
+  const lineHeight = 10;
+  const totalHeight = lines.length * lineHeight;
+  const startY = Math.floor((rows - totalHeight) / 2);
+  
+  lines.forEach((text, i) => {
+    const textWidth = text.length * 6;
+    const startX = Math.floor((cols - textWidth) / 2);
+    drawText(text, startX, startY + i * lineHeight);
+  });
+}
+
+function countNeighbors(x, y) {
+  let sum = 0;
+  for (let i = -1; i <= 1; i++) {
+    for (let j = -1; j <= 1; j++) {
+      if (i === 0 && j === 0) continue;
+      const col = (x + i + cols) % cols;
+      const row = (y + j + rows) % rows;
+      sum += grid[col][row];
+    }
+  }
+  return sum;
+}
+
+function step() {
+  const next = grid.map((col, x) =>
+    col.map((cell, y) => {
+      const n = countNeighbors(x, y);
+      if (cell && (n < 2 || n > 3)) return 0;
+      if (!cell && n === 3) return 1;
+      return cell;
+    })
+  );
+  grid = next;
+}
+
+function draw() {
+  ctx.fillStyle = '#000';
+  ctx.fillRect(0, 0, canvas.width, canvas.height);
+  
+  ctx.fillStyle = '#0f0';
+  for (let x = 0; x < cols; x++) {
+    for (let y = 0; y < rows; y++) {
+      if (grid[x][y]) {
+        ctx.fillRect(x * cellSize, y * cellSize, cellSize - 1, cellSize - 1);
+      }
+    }
+  }
+}
+
+function loop() {
+  if (running) step();
+  draw();
+  setTimeout(loop, 100);
+}
+
+// Mouse interaction
+let isDrawing = false;
+
+canvas.addEventListener('mousedown', (e) => {
+  isDrawing = true;
+  drawCell(e);
+});
+
+canvas.addEventListener('mouseup', () => isDrawing = false);
+canvas.addEventListener('mouseleave', () => isDrawing = false);
+
+canvas.addEventListener('mousemove', (e) => {
+  if (isDrawing) drawCell(e);
+});
+
+function drawCell(e) {
+  const rect = canvas.getBoundingClientRect();
+  const x = Math.floor((e.clientX - rect.left) / cellSize);
+  const y = Math.floor((e.clientY - rect.top) / cellSize);
+  if (x >= 0 && x < cols && y >= 0 && y < rows) {
+    grid[x][y] = 1;
+  }
+}
+
+// Play/pause button
+const playBtn = document.getElementById('playBtn');
+playBtn.onclick = function() {
+  running = !running;
+  this.classList.toggle('playing', running);
+};
+
+// Reset button
+document.getElementById('resetBtn').onclick = function() {
+  running = false;
+  playBtn.classList.remove('playing');
+  initName();
+};
+
+initName();
+loop();
+</script>
+
+</body>
+</html>
