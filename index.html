@@ -48,11 +48,10 @@
     }
 
     .controls {
-      position: absolute;
-      bottom: 10px;
-      right: 10px;
       display: flex;
       gap: 5px;
+      justify-content: center;
+      margin: 10px 0;
     }
 
     .ctrl-btn {
@@ -115,29 +114,61 @@
       font-size: 11px;
       color: #444;
     }
+
+    #headshotSection {
+      max-width: 600px;
+      width: 100%;
+      margin-top: 2px;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+    }
+
+    #headshotImg {
+      display: block;
+      width: 300px;
+    }
+
+    #headshotCanvas {
+      display: none;
+      cursor: crosshair;
+    }
   </style>
 </head>
 <body>
 
-<div id="tooltip">Click to add a cell</div>
+<div id="tooltip">click to add cells</div>
 <div class="gol-container">
   <canvas id="golCanvas"></canvas>
-  <div class="controls">
-    <button class="ctrl-btn" id="resetBtn" title="Reset">
-      <svg width="12" height="12" viewBox="0 0 12 12">
-        <path d="M6 0v3l-4-1.5L6 0zM6 1.5A4.5 4.5 0 1 1 1.5 6H0a6 6 0 1 0 6-6v1.5z"/>
-      </svg>
-    </button>
-    <button class="ctrl-btn" id="playBtn" title="Play/Pause">
-      <svg class="play-icon" width="12" height="14" viewBox="0 0 12 14">
-        <polygon points="0,0 12,7 0,14"/>
-      </svg>
-      <svg class="pause-icon" width="10" height="14" viewBox="0 0 10 14">
-        <rect x="0" y="0" width="3" height="14"/>
-        <rect x="7" y="0" width="3" height="14"/>
-      </svg>
-    </button>
-  </div>
+</div>
+
+<div id="headshotSection">
+  <img id="headshotImg" src="headshot.jpg">
+  <canvas id="headshotCanvas"></canvas>
+</div>
+
+<div class="controls">
+  <button class="ctrl-btn" id="resetBtn" title="Reset">
+    <svg width="12" height="12" viewBox="0 0 12 12">
+      <path d="M6 0v3l-4-1.5L6 0zM6 1.5A4.5 4.5 0 1 1 1.5 6H0a6 6 0 1 0 6-6v1.5z"/>
+    </svg>
+  </button>
+  <button class="ctrl-btn" id="playBtn" title="Play/Pause">
+    <svg class="play-icon" width="12" height="14" viewBox="0 0 12 14">
+      <polygon points="0,0 12,7 0,14"/>
+    </svg>
+    <svg class="pause-icon" width="10" height="14" viewBox="0 0 10 14">
+      <rect x="0" y="0" width="3" height="14"/>
+      <rect x="7" y="0" width="3" height="14"/>
+    </svg>
+  </button>
+  <button class="ctrl-btn" id="photoBtn" title="Dither headshot">
+    <svg width="16" height="12" viewBox="0 0 16 12">
+      <rect x="0" y="2" width="16" height="10" rx="1" ry="1"/>
+      <polygon points="5,2 6,0 10,0 11,2"/>
+      <circle cx="8" cy="7" r="2.5" fill="#000"/>
+    </svg>
+  </button>
 </div>
 
 <hr>
@@ -161,9 +192,9 @@
               <li>Mechanistic interpretability of neural-networks
                       <li>Computational properties of recurrent systems
                           <li>Emergent complexity and evolutionary algorithms
-                              <li>Developmental changes in neuronal computation 
+                              <li>Developmental changes in neuronal computation
                                       <li>Biological computing vs artificial computing (i.e. how is the human brain so efficient)
-                                              <li>Computational tool-development for network analysis and open-source software 
+                                              <li>Computational tool-development for network analysis and open-source software
   </ul>
 
   <h2>// LINKS</h2>
@@ -187,6 +218,7 @@
 </div>
 
 <script>
+// ── Name GoL (top canvas) ───────────────────────────────────────────────────
 const canvas = document.getElementById('golCanvas');
 const ctx = canvas.getContext('2d');
 const cellSize = 4;
@@ -201,132 +233,20 @@ let grid = Array(cols).fill().map(() => Array(rows).fill(0));
 let running = false;
 
 const font = {
-  'J': [
-    '  ###',
-    '    #',
-    '    #',
-    '    #',
-    '#   #',
-    '#   #',
-    ' ### ',
-  ],
-  'O': [
-    ' ### ',
-    '#   #',
-    '#   #',
-    '#   #',
-    '#   #',
-    '#   #',
-    ' ### ',
-  ],
-  'S': [
-    ' ####',
-    '#    ',
-    '#    ',
-    ' ### ',
-    '    #',
-    '    #',
-    '#### ',
-  ],
-  'H': [
-    '#   #',
-    '#   #',
-    '#   #',
-    '#####',
-    '#   #',
-    '#   #',
-    '#   #',
-  ],
-  'U': [
-    '#   #',
-    '#   #',
-    '#   #',
-    '#   #',
-    '#   #',
-    '#   #',
-    ' ### ',
-  ],
-  'A': [
-    ' ### ',
-    '#   #',
-    '#   #',
-    '#####',
-    '#   #',
-    '#   #',
-    '#   #',
-  ],
-  'M': [
-    '#   #',
-    '## ##',
-    '# # #',
-    '# # #',
-    '#   #',
-    '#   #',
-    '#   #',
-  ],
-  'E': [
-    '#####',
-    '#    ',
-    '#    ',
-    '#### ',
-    '#    ',
-    '#    ',
-    '#####',
-  ],
-  'L': [
-    '#    ',
-    '#    ',
-    '#    ',
-    '#    ',
-    '#    ',
-    '#    ',
-    '#####',
-  ],
-  'N': [
-    '#   #',
-    '##  #',
-    '##  #',
-    '# # #',
-    '#  ##',
-    '#  ##',
-    '#   #',
-  ],
-  'D': [
-    '#### ',
-    '#   #',
-    '#   #',
-    '#   #',
-    '#   #',
-    '#   #',
-    '#### ',
-  ],
-  'R': [
-    '#### ',
-    '#   #',
-    '#   #',
-    '#### ',
-    '# #  ',
-    '#  # ',
-    '#   #',
-  ],
-  'B': [
-    '#### ',
-    '#   #',
-    '#   #',
-    '#### ',
-    '#   #',
-    '#   #',
-    '#### ',
-  ],
-  ' ': [
-    '     ',
-    '     ',
-    '     ',
-    '     ',
-    '     ',
-    '     ',
-    '     ',
-  ],
+  'J': ['  ###','    #','    #','    #','#   #','#   #',' ### '],
+  'O': [' ### ','#   #','#   #','#   #','#   #','#   #',' ### '],
+  'S': [' ####','#    ','#    ',' ### ','    #','    #','#### '],
+  'H': ['#   #','#   #','#   #','#####','#   #','#   #','#   #'],
+  'U': ['#   #','#   #','#   #','#   #','#   #','#   #',' ### '],
+  'A': [' ### ','#   #','#   #','#####','#   #','#   #','#   #'],
+  'M': ['#   #','## ##','# # #','# # #','#   #','#   #','#   #'],
+  'E': ['#####','#    ','#    ','#### ','#    ','#    ','#####'],
+  'L': ['#    ','#    ','#    ','#    ','#    ','#    ','#####'],
+  'N': ['#   #','##  #','##  #','# # #','#  ##','#  ##','#   #'],
+  'D': ['#### ','#   #','#   #','#   #','#   #','#   #','#### '],
+  'R': ['#### ','#   #','#   #','#### ','# #  ','#  # ','#   #'],
+  'B': ['#### ','#   #','#   #','#### ','#   #','#   #','#### '],
+  ' ': ['     ','     ','     ','     ','     ','     ','     '],
 };
 
 function drawText(text, startX, startY) {
@@ -339,9 +259,7 @@ function drawText(text, startX, startY) {
           if (letter[row][col] === '#') {
             const x = offsetX + col;
             const y = startY + row;
-            if (x >= 0 && x < cols && y >= 0 && y < rows) {
-              grid[x][y] = 1;
-            }
+            if (x >= 0 && x < cols && y >= 0 && y < rows) grid[x][y] = 1;
           }
         }
       }
@@ -352,36 +270,24 @@ function drawText(text, startX, startY) {
 
 function initName() {
   grid = Array(cols).fill().map(() => Array(rows).fill(0));
-  
   const lines = ["JOSHUA", "BRENDAN", "MELANDER"];
   const lineHeight = 10;
-  const totalHeight = lines.length * lineHeight;
-  const startY = Math.floor((rows - totalHeight) / 2);
-  
+  const startY = Math.floor((rows - lines.length * lineHeight) / 2);
   lines.forEach((text, i) => {
-    const textWidth = text.length * 6;
-    const startX = Math.floor((cols - textWidth) / 2);
+    const startX = Math.floor((cols - text.length * 6) / 2);
     drawText(text, startX, startY + i * lineHeight);
   });
-}
-
-function countNeighbors(x, y) {
-  let sum = 0;
-  for (let i = -1; i <= 1; i++) {
-    for (let j = -1; j <= 1; j++) {
-      if (i === 0 && j === 0) continue;
-      const col = (x + i + cols) % cols;
-      const row = (y + j + rows) % rows;
-      sum += grid[col][row];
-    }
-  }
-  return sum;
 }
 
 function step() {
   const next = grid.map((col, x) =>
     col.map((cell, y) => {
-      const n = countNeighbors(x, y);
+      let n = 0;
+      for (let i = -1; i <= 1; i++)
+        for (let j = -1; j <= 1; j++) {
+          if (i === 0 && j === 0) continue;
+          n += grid[(x + i + cols) % cols][(y + j + rows) % rows];
+        }
       if (cell && (n < 2 || n > 3)) return 0;
       if (!cell && n === 3) return 1;
       return cell;
@@ -393,61 +299,153 @@ function step() {
 function draw() {
   ctx.fillStyle = '#000';
   ctx.fillRect(0, 0, canvas.width, canvas.height);
-  
   ctx.fillStyle = '#0f0';
-  for (let x = 0; x < cols; x++) {
-    for (let y = 0; y < rows; y++) {
-      if (grid[x][y]) {
-        ctx.fillRect(x * cellSize, y * cellSize, cellSize - 1, cellSize - 1);
-      }
-    }
-  }
+  for (let x = 0; x < cols; x++)
+    for (let y = 0; y < rows; y++)
+      if (grid[x][y]) ctx.fillRect(x * cellSize, y * cellSize, cellSize - 1, cellSize - 1);
 }
 
+// ── Headshot GoL (below) ────────────────────────────────────────────────────
+const headshotImg = document.getElementById('headshotImg');
+const hCanvas = document.getElementById('headshotCanvas');
+const hCtx = hCanvas.getContext('2d');
+const hCellSize = 4;
+let hCols = 0, hRows = 0;
+let hGrid = null;
+
+function stepHeadshot() {
+  const next = hGrid.map((col, x) =>
+    col.map((cell, y) => {
+      let n = 0;
+      for (let i = -1; i <= 1; i++)
+        for (let j = -1; j <= 1; j++) {
+          if (i === 0 && j === 0) continue;
+          n += hGrid[(x + i + hCols) % hCols][(y + j + hRows) % hRows];
+        }
+      if (cell && (n < 2 || n > 3)) return 0;
+      if (!cell && n === 3) return 1;
+      return cell;
+    })
+  );
+  hGrid = next;
+}
+
+function drawHeadshot() {
+  hCtx.fillStyle = '#000';
+  hCtx.fillRect(0, 0, hCanvas.width, hCanvas.height);
+  hCtx.fillStyle = '#0f0';
+  for (let x = 0; x < hCols; x++)
+    for (let y = 0; y < hRows; y++)
+      if (hGrid[x][y]) hCtx.fillRect(x * hCellSize, y * hCellSize, hCellSize - 1, hCellSize - 1);
+}
+
+// ── Main loop ───────────────────────────────────────────────────────────────
 function loop() {
-  if (running) step();
+  if (running) {
+    step();
+    if (hGrid) stepHeadshot();
+  }
   draw();
+  if (hGrid) drawHeadshot();
   setTimeout(loop, 100);
 }
 
-// Mouse interaction
+// ── Mouse interaction (name canvas) ────────────────────────────────────────
 let isDrawing = false;
-
-canvas.addEventListener('mousedown', (e) => {
-  isDrawing = true;
-  drawCell(e);
-});
-
+canvas.addEventListener('mousedown', (e) => { isDrawing = true; paintCell(e); });
 canvas.addEventListener('mouseup', () => isDrawing = false);
 canvas.addEventListener('mouseleave', () => isDrawing = false);
+canvas.addEventListener('mousemove', (e) => { if (isDrawing) paintCell(e); });
 
-canvas.addEventListener('mousemove', (e) => {
-  if (isDrawing) drawCell(e);
-});
-
-function drawCell(e) {
+function paintCell(e) {
   const rect = canvas.getBoundingClientRect();
   const x = Math.floor((e.clientX - rect.left) / cellSize);
   const y = Math.floor((e.clientY - rect.top) / cellSize);
-  if (x >= 0 && x < cols && y >= 0 && y < rows) {
-    grid[x][y] = 1;
-  }
+  if (x >= 0 && x < cols && y >= 0 && y < rows) grid[x][y] = 1;
 }
 
-// Play/pause button
+// ── Controls ────────────────────────────────────────────────────────────────
 const playBtn = document.getElementById('playBtn');
+
 playBtn.onclick = function() {
   running = !running;
   this.classList.toggle('playing', running);
 };
 
-// Reset button
 document.getElementById('resetBtn').onclick = function() {
   running = false;
   playBtn.classList.remove('playing');
+  hGrid = null;
+  hCanvas.style.display = 'none';
+  headshotImg.style.display = 'block';
   initName();
 };
 
+document.getElementById('photoBtn').onclick = function() {
+  if (hGrid !== null) {
+    // toggle back to photo
+    hGrid = null;
+    hCanvas.style.display = 'none';
+    headshotImg.style.display = 'block';
+    return;
+  }
+
+  fetch('headshot.jpg')
+    .then(r => r.blob())
+    .then(blob => {
+      const url = URL.createObjectURL(blob);
+      const img = new Image();
+      img.onload = function() {
+        URL.revokeObjectURL(url);
+
+        // Size canvas to match image aspect ratio at half the grid width
+        const aspect = img.naturalHeight / img.naturalWidth;
+        hCanvas.width = 300;
+        hCanvas.height = Math.round(300 * aspect);
+        hCols = Math.floor(hCanvas.width / hCellSize);
+        hRows = Math.floor(hCanvas.height / hCellSize);
+
+        // Sample image into cell grid
+        const offCanvas = document.createElement('canvas');
+        offCanvas.width = hCols;
+        offCanvas.height = hRows;
+        const offCtx = offCanvas.getContext('2d', { willReadFrequently: true });
+        offCtx.drawImage(img, 0, 0, hCols, hRows);
+        const imageData = offCtx.getImageData(0, 0, hCols, hRows);
+
+        // Grayscale
+        const gray = new Float32Array(hCols * hRows);
+        for (let i = 0; i < hCols * hRows; i++) {
+          gray[i] = imageData.data[i*4] * 0.299 + imageData.data[i*4+1] * 0.587 + imageData.data[i*4+2] * 0.114;
+        }
+
+        // Floyd-Steinberg dithering
+        hGrid = Array(hCols).fill().map(() => Array(hRows).fill(0));
+        for (let y = 0; y < hRows; y++) {
+          for (let x = 0; x < hCols; x++) {
+            const idx = y * hCols + x;
+            const old = gray[idx];
+            const val = old > 128 ? 255 : 0;
+            hGrid[x][y] = val > 128 ? 1 : 0;
+            const err = old - val;
+            if (x + 1 < hCols)          gray[idx + 1]          += err * 7/16;
+            if (y + 1 < hRows) {
+              if (x > 0)                gray[idx + hCols - 1]  += err * 3/16;
+                                        gray[idx + hCols]      += err * 5/16;
+              if (x + 1 < hCols)       gray[idx + hCols + 1]  += err * 1/16;
+            }
+          }
+        }
+
+        headshotImg.style.display = 'none';
+        hCanvas.style.display = 'block';
+      };
+      img.src = url;
+    })
+    .catch(e => console.error('Failed to load headshot:', e));
+};
+
+// ── Init ────────────────────────────────────────────────────────────────────
 initName();
 loop();
 
@@ -457,9 +455,7 @@ canvas.addEventListener('mousemove', (e) => {
   tooltip.style.left = (e.clientX + 14) + 'px';
   tooltip.style.top = (e.clientY + 14) + 'px';
 });
-canvas.addEventListener('mouseleave', () => {
-  tooltip.style.display = 'none';
-});
+canvas.addEventListener('mouseleave', () => { tooltip.style.display = 'none'; });
 </script>
 
 </body>
