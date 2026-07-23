@@ -115,6 +115,18 @@
       color: #444;
     }
 
+    /* a provoked oscillator: silent at rest, rings when perturbed */
+    a.ghost {
+      color: #000;
+      text-decoration: none;
+      padding: 0 4px;
+      transition: color 0.4s, text-shadow 0.4s;
+    }
+    a.ghost:hover {
+      color: #0f0;
+      text-shadow: 0 0 6px #0f0;
+    }
+
     #headshotSection {
       max-width: 600px;
       width: 100%;
@@ -213,7 +225,7 @@
   </ul>
 
   <div class="footer">
-    last updated jan 2026
+    last updated jan 2026<a class="ghost" href="nastoyka.html" title="provoke me">&#8226;</a>
   </div>
 </div>
 
