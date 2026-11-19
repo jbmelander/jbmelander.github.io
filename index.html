@@ -2,13 +2,15 @@
 <html>
 <head>
   <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="description" content="Joshua Brendan Melander: neuroscientist building mechanistic models of biological and artificial neural networks.">
   <title>Joshua Brendan Melander</title>
   <style>
     body {
       background: #000;
       color: #ccc;
       font-family: "Courier New", monospace;
-      font-size: 14px;
+      font-size: 15px;
       margin: 0;
       padding: 20px;
       display: flex;
@@ -16,11 +18,10 @@
       align-items: center;
     }
 
-    a { color: #0ff; }
-    a:visited { color: #f9f; }
+    a, a:visited { color: #8cd; }
 
     h2 {
-      color: #ff0;
+      color: #eee;
       font-size: 16px;
       margin-top: 30px;
     }
@@ -36,15 +37,24 @@
     .content {
       max-width: 600px;
       width: 100%;
+      padding: 0 16px 16px;
+      box-sizing: border-box;
     }
 
-    .gol-container {
+    /* Game of Life field, confined to the name box and faded at its edges */
+    #nameSlot {
       position: relative;
+      width: 600px;
+      max-width: 100%;
+      height: 200px;
     }
 
-    #golCanvas {
-      display: block;
-      cursor: crosshair;
+    #lifeCanvas {
+      position: absolute;
+      inset: 0;
+      pointer-events: none;
+      -webkit-mask-image: radial-gradient(ellipse at center, #000 45%, transparent 100%);
+              mask-image: radial-gradient(ellipse at center, #000 45%, transparent 100%);
     }
 
     .controls {
@@ -74,7 +84,7 @@
       fill: #0f0;
     }
 
-    .pause-icon {
+    .reset-icon {
       display: none;
     }
 
@@ -82,25 +92,12 @@
       display: none;
     }
 
-    .ctrl-btn.playing .pause-icon {
+    .ctrl-btn.playing .reset-icon {
       display: block;
     }
 
-    #tooltip {
-      position: fixed;
-      background: #000;
-      border: 1px solid #0f0;
-      color: #0f0;
-      font-family: "Courier New", monospace;
-      font-size: 11px;
-      padding: 4px 8px;
-      pointer-events: none;
-      display: none;
-      white-space: nowrap;
-      z-index: 100;
-    }
 
-    .email { color: #f60; }
+    .email { color: #eee; }
 
     ul {
       margin: 10px 0;
@@ -109,22 +106,74 @@
 
     li { margin: 5px 0; }
 
+    p { line-height: 1.5; }
+
+    .dim { color: #777; }
+
+    .prompt { color: #0f0; }
+
+    .thesis {
+      border-left: 2px solid #3a3;
+      padding-left: 12px;
+      color: #ddd;
+    }
+
+    .axis {
+      text-align: center;
+      color: #0f0;
+      letter-spacing: 2px;
+      margin: 18px 0 6px;
+    }
+
+    .dir { margin: 14px 0; }
+    .dir .tag { color: #0f0; }
+    .dir b { color: #fff; font-weight: normal; }
+    .dir .field { color: #999; font-style: italic; }
+
+    ol.pubs { padding-left: 25px; }
+    ol.pubs li { margin: 10px 0; line-height: 1.4; }
+    .me { color: #fff; }
+    .venue { color: #aaa; }
+    a.pdf, a.pdf:visited { color: #6c6; text-decoration: none; white-space: nowrap; }
+    a.pdf:hover { text-decoration: underline; }
+
     .footer {
       margin-top: 40px;
       font-size: 11px;
       color: #444;
     }
 
-    /* a provoked oscillator: silent at rest, rings when perturbed */
-    a.ghost {
-      color: #000;
-      text-decoration: none;
-      padding: 0 4px;
-      transition: color 0.4s, text-shadow 0.4s;
+
+    .pitch {
+      max-width: 600px;
+      width: 100%;
+      text-align: center;
+      line-height: 1.5;
+      margin: 4px 0 14px;
+      padding: 0 16px;
+      box-sizing: border-box;
     }
-    a.ghost:hover {
-      color: #0f0;
-      text-shadow: 0 0 6px #0f0;
+    .pitch .featured { color: #777; }
+
+    .feature {
+      border: 1px dashed #444;
+      padding: 10px 14px;
+      margin: 14px 0;
+    }
+    .feature .title { color: #fff; }
+    .feature figure { margin: 12px 0 4px; }
+    .feature img {
+      display: block;
+      width: 100%;
+      height: auto;
+      background: #fff;
+      border-radius: 3px;
+    }
+    .feature figcaption {
+      color: #777;
+      font-size: 13px;
+      margin-top: 6px;
+      line-height: 1.4;
     }
 
     #headshotSection {
@@ -139,110 +188,186 @@
     #headshotImg {
       display: block;
       width: 300px;
-    }
-
-    #headshotCanvas {
-      display: none;
-      cursor: crosshair;
+      max-width: 100%;
     }
   </style>
 </head>
 <body>
 
-<div id="tooltip">click to add cells</div>
-<div class="gol-container">
-  <canvas id="golCanvas"></canvas>
-</div>
-
-<div id="headshotSection">
-  <img id="headshotImg" src="headshot.jpg">
-  <canvas id="headshotCanvas"></canvas>
+<div id="nameSlot" role="img" aria-label="Joshua Brendan Melander">
+  <canvas id="lifeCanvas" aria-hidden="true"></canvas>
 </div>
 
 <div class="controls">
-  <button class="ctrl-btn" id="resetBtn" title="Reset">
-    <svg width="12" height="12" viewBox="0 0 12 12">
-      <path d="M6 0v3l-4-1.5L6 0zM6 1.5A4.5 4.5 0 1 1 1.5 6H0a6 6 0 1 0 6-6v1.5z"/>
-    </svg>
-  </button>
-  <button class="ctrl-btn" id="playBtn" title="Play/Pause">
+  <button class="ctrl-btn" id="playBtn" title="Play/Reset">
     <svg class="play-icon" width="12" height="14" viewBox="0 0 12 14">
       <polygon points="0,0 12,7 0,14"/>
     </svg>
-    <svg class="pause-icon" width="10" height="14" viewBox="0 0 10 14">
-      <rect x="0" y="0" width="3" height="14"/>
-      <rect x="7" y="0" width="3" height="14"/>
-    </svg>
-  </button>
-  <button class="ctrl-btn" id="photoBtn" title="Dither headshot">
-    <svg width="16" height="12" viewBox="0 0 16 12">
-      <rect x="0" y="2" width="16" height="10" rx="1" ry="1"/>
-      <polygon points="5,2 6,0 10,0 11,2"/>
-      <circle cx="8" cy="7" r="2.5" fill="#000"/>
+    <svg class="reset-icon" width="14" height="14" viewBox="0 0 14 14">
+      <path d="M11.5 7 A4.5 4.5 0 1 1 7 2.5" fill="none" stroke="#0f0" stroke-width="2"/>
+      <polygon points="6,0 10,2.5 6,5"/>
     </svg>
   </button>
 </div>
+
+<div class="pitch">
+  Mechanistic models of neural circuits, biological and artificial:
+  interpretability of deep networks &middot; computation in neural organoids.<br>
+  <span class="featured">featured:</span>
+  <a href="#codec">CODEC, causal contribution decomposition</a>
+  <span class="venue">ICLR 2026</span>
+  <a class="pdf" href="https://arxiv.org/pdf/2603.06557">[pdf]</a>
+  <a class="pdf" href="https://github.com/baccuslab/bscope">[code]</a>
+</div>
+
+<div id="headshotSection">
+  <img id="headshotImg" src="headshot.jpg" alt="Joshua Brendan Melander">
+</div>
+
 
 <hr>
 
 <div class="content">
   <h2>// ABOUT</h2>
   <p>
-  Computational and experimental neuroscientist. Cactus collector. Slingshot plunker. Father.
-
-
-  Currently, post-doc in Pasca Lab, studying principles of neural computation and development in human organoid circuits.
-
+    <span class="prompt">$ whoami</span><br>
+    Neuroscientist. I build mechanistic models of neural circuits, biological
+    and artificial, and use each to explain the other.
+  </p>
+  <p>
+    Postdoc in the <a href="https://med.stanford.edu/pascalab.html">Pasca Lab</a>
+    at Stanford: computation &times; neural organoids.
+    PhD in Neuroscience at Stanford with Stephen Baccus: deep models of the retina
+    and causal frameworks from neuroscience for AI interpretability.
+  </p>
+  <p class="dim">
+    Former classical violinist. Current cactus collector and father.
   </p>
   <p>
     Email: <span class="email">melander [at] stanford [dot] edu</span>
   </p>
 
-  <h2>// RESEARCH INTERESTS</h2>
-  <ul>
-      <li>Sensory encoding of natural stimuli
-              <li>Mechanistic interpretability of neural-networks
-                      <li>Computational properties of recurrent systems
-                          <li>Emergent complexity and evolutionary algorithms
-                              <li>Developmental changes in neuronal computation
-                                      <li>Biological computing vs artificial computing (i.e. how is the human brain so efficient)
-                                              <li>Computational tool-development for network analysis and open-source software
-  </ul>
+  <h2>// RESEARCH</h2>
+  <p class="thesis">
+    Mechanistic modeling of biological neural circuits.
+    Biological insights applied to artificial neural networks.
+    What happens at the interface of biology and AI?
+  </p>
+
+  <div class="axis">neurons &lt;==&gt; networks</div>
+
+  <div class="dir">
+    <span class="tag">[&rarr;]</span> <b>Networks, from a neuroscience perspective.</b>
+    <span class="field">Biological interpretation of artificial neural networks.</span>
+    Causal perturbation, circuit dissection, and cell-type discovery applied to
+    deep networks, so that theories of brain and mind can inform the future of AI:
+    sparse features and superposition, circuits and attribution, and new
+    architectures extending and improving transformers.
+  </div>
+  <div class="dir">
+    <span class="tag">[&larr;]</span> <b>Neurons, from a mechanistic perspective.</b>
+    <span class="field">Biocomputing and neural modeling.</span>
+    Leveraging computational tools to understand neurons, means of interfacing
+    with neural tissue, and what makes biological neural networks so efficient.
+  </div>
+
+  <p class="dim">
+    Underlying interests: superposition &middot; sparse autoencoders &middot;
+    circuits &amp; attribution &middot; encoding of natural stimuli &middot;
+    recurrent dynamics &middot; development of neural computation &middot;
+    emergent complexity &middot; computational efficiency &middot;
+    brain-machine interfaces &middot; <a href="https://github.com/baccuslab/bscope">open-source tools for mechanistic interpretability</a>.
+  </p>
+
+  <div class="feature" id="codec">
+    <span class="prompt">// featured</span><br>
+    <span class="title">Causal interpretation of neural network computations with
+    contribution decomposition (CODEC).</span>
+    <span class="venue">ICLR 2026</span>
+    <a class="pdf" href="https://arxiv.org/pdf/2603.06557">[pdf]</a>
+    <a class="pdf" href="https://github.com/baccuslab/bscope">[code]</a>
+    <figure>
+      <img src="codec_fig.png" width="766" height="502" loading="lazy"
+           alt="A: a brain with stimulus X, behavior Y, and an intervention at Z. B: a deep network where hidden neuron Z has a receptive field from input X and a projective field onto output Y.">
+      <figcaption>
+        (A) Neuroscience asks how a stimulus X drives behavior Y, and probes it by
+        intervening at Z. (B) The same logic in a deep network: a hidden neuron's
+        receptive field (X &rarr; Z) and projective field (Z &rarr; Y).
+      </figcaption>
+    </figure>
+    <p>
+      CODEC uses sparse autoencoders to decompose a network's behavior into sparse
+      motifs of hidden-neuron <i>contributions</i> to its outputs, rather than
+      activations alone. In image classifiers, contributions grow sparser and
+      higher-dimensional with depth, and positive and negative effects on outputs
+      increasingly separate. The decomposition supports causal control of outputs.
+      Applied to models of the vertebrate retina, it shows how interneurons combine
+      and where dynamic receptive fields come from.
+    </p>
+    <p>
+      Code: <a href="https://github.com/baccuslab/bscope">bscope</a>, neural-network functional microscopy.
+      An open-source PyTorch library for recording activations, gradients, and
+      contributions in any model (CNNs, MLPs, ViTs), with attribution methods,
+      causal ablations including attention-head disruption, and sparse autoencoders.
+    </p>
+  </div>
+
+  <h2>// SELECTED PUBLICATIONS</h2>
+  <ol class="pubs">
+    <li><span class="me">Melander, J.B.</span>, Alaoui, Z., Liu, S., Ganguli, S., Baccus, S.
+      Causal interpretation of neural network computations with contribution decomposition.
+      <span class="venue">ICLR</span> (2026) <a class="pdf" href="https://arxiv.org/pdf/2603.06557">[pdf]</a></li>
+    <li>Ding, X., Lee, D., <span class="me">Melander, J.B.</span>, Sivulka, G., Ganguli, S., Baccus, S.
+      Information geometry of the retinal representation manifold.
+      <span class="venue">NeurIPS</span> (2023) <a class="pdf" href="https://par.nsf.gov/servlets/purl/10634325">[pdf]</a></li>
+    <li>Maheswaranathan, N., McIntosh, L., &hellip;, <span class="me">Melander, J.B.</span>, &hellip;, Ganguli, S., Baccus, S.
+      Interpreting the retinal neural code for natural scenes: from computations to neurons.
+      <span class="venue">Neuron</span> (2023) <a class="pdf" href="https://par.nsf.gov/servlets/purl/10513493">[pdf]</a></li>
+    <li><span class="me">Melander, J.B.</span>*, Nayebi, A.*, &hellip;, Mao, T., Zhong, H.
+      Distinct <i>in vivo</i> dynamics of excitatory synapses onto cortical pyramidal
+      neurons and parvalbumin-positive interneurons.
+      <span class="venue">Cell Reports</span> (2021) <a class="pdf" href="melander2021_cellreports.pdf">[pdf]</a></li>
+  </ol>
+  <p class="dim">Full list: <a href="https://scholar.google.com/citations?user=YIKKiYAAAAAJ&hl=en&oi=ao">Google Scholar</a>.</p>
 
   <h2>// LINKS</h2>
   <ul>
-    <li><a href="https://med.stanford.edu/pascalab.html">Lab website</a></li>
+    <li><a href="https://med.stanford.edu/pascalab.html">Pasca Lab</a></li>
     <li><a href="https://scholar.google.com/citations?user=YIKKiYAAAAAJ&hl=en&oi=ao">Google Scholar</a></li>
     <li><a href="https://github.com/jbmelander">GitHub</a></li>
+    <li><a href="https://github.com/baccuslab/bscope">bscope</a> <span class="dim">(interpretability library, PyTorch)</span></li>
     <li><a href="https://twitter.com/melandrocyte">Twitter</a></li>
     <li><a href="CV.pdf">CV</a></li>
   </ul>
 
-  <h2>// ERRATA</h2>
-  <ul>
-    <li><a href="cacti.html">Cactus collection</a></li>
-    <li><a href="musings.html">Musings</a></li>
-  </ul>
+  <!-- <h2>// ERRATA</h2> -->
+  <!-- <ul> -->
+  <!--   <li><a href="cacti.html">Cactus collection</a></li> -->
+  <!--   <li><a href="musings.html">Musings</a></li> -->
+  <!-- </ul> -->
 
   <div class="footer">
-    last updated jan 2026<a class="ghost" href="nastoyka.html" title="provoke me">&#8226;</a>
+    last updated November 2026
   </div>
 </div>
 
 <script>
-// ── Name GoL (top canvas) ───────────────────────────────────────────────────
-const canvas = document.getElementById('golCanvas');
+// ── Life field ─────────────────────────────────────────────────────────────
+// One Conway grid fills the name box. Random soup is drawn at low opacity;
+// the name is drawn at full opacity. On play, a cell stays bright only while
+// it is an original name cell that has stayed alive since t = 0.
+const canvas = document.getElementById('lifeCanvas');
 const ctx = canvas.getContext('2d');
-const cellSize = 4;
+const slot = document.getElementById('nameSlot');
+const CELL = 4;          // px per cell
+const DENSITY = 0.08;    // initial soup density
+const DIM = 'rgba(0, 255, 0, 0.12)';
+const BRIGHT = '#0f0';
 
-canvas.width = 600;
-canvas.height = 200;
-
-const cols = Math.floor(canvas.width / cellSize);
-const rows = Math.floor(canvas.height / cellSize);
-
-let grid = Array(cols).fill().map(() => Array(rows).fill(0));
+let cols = 0, rows = 0;
+let alive, next, orig;   // Uint8Arrays, index = y * cols + x
 let running = false;
+let builtWidth = 0;
 
 const font = {
   'J': ['  ###','    #','    #','    #','#   #','#   #',' ### '],
@@ -258,216 +383,103 @@ const font = {
   'D': ['#### ','#   #','#   #','#   #','#   #','#   #','#### '],
   'R': ['#### ','#   #','#   #','#### ','# #  ','#  # ','#   #'],
   'B': ['#### ','#   #','#   #','#### ','#   #','#   #','#### '],
-  ' ': ['     ','     ','     ','     ','     ','     ','     '],
 };
+const LINES = ['JOSHUA', 'BRENDAN', 'MELANDER'];
+const LINE_H = 10, CHAR_W = 6;
 
-function drawText(text, startX, startY) {
-  let offsetX = startX;
-  for (const char of text) {
-    const letter = font[char.toUpperCase()];
-    if (letter) {
-      for (let row = 0; row < letter.length; row++) {
-        for (let col = 0; col < letter[row].length; col++) {
-          if (letter[row][col] === '#') {
-            const x = offsetX + col;
-            const y = startY + row;
-            if (x >= 0 && x < cols && y >= 0 && y < rows) grid[x][y] = 1;
-          }
+function build() {
+  const W = slot.clientWidth;
+  const H = slot.clientHeight;
+  canvas.width = W; canvas.height = H;
+  canvas.style.width = W + 'px'; canvas.style.height = H + 'px';
+  cols = Math.ceil(W / CELL); rows = Math.ceil(H / CELL);
+  alive = new Uint8Array(cols * rows);
+  next  = new Uint8Array(cols * rows);
+  orig  = new Uint8Array(cols * rows);
+  builtWidth = document.documentElement.clientWidth;
+
+  // Name placement: centred in the box, in grid coordinates
+  const cx = Math.round(W / 2 / CELL);
+  const cy = Math.round(H / 2 / CELL);
+  const blockW = Math.max(...LINES.map(t => t.length)) * CHAR_W;
+  const blockH = LINES.length * LINE_H;
+  const x0 = cx - Math.floor(blockW / 2) - 2, x1 = cx + Math.ceil(blockW / 2) + 2;
+  const y0 = cy - Math.floor(blockH / 2) - 2, y1 = cy + Math.ceil(blockH / 2) + 2;
+
+  // Random soup everywhere except a clear margin around the name
+  for (let y = 0; y < rows; y++)
+    for (let x = 0; x < cols; x++)
+      if (!(x >= x0 && x < x1 && y >= y0 && y < y1) && Math.random() < DENSITY)
+        alive[y * cols + x] = 1;
+
+  // Name cells: alive and marked original
+  LINES.forEach((text, li) => {
+    let ox = cx - Math.floor(text.length * CHAR_W / 2);
+    const oy = cy - Math.floor(blockH / 2) + li * LINE_H;
+    for (const ch of text) {
+      const g = font[ch];
+      if (g) g.forEach((rowStr, gy) => [...rowStr].forEach((c, gx) => {
+        if (c !== '#') return;
+        const x = ox + gx, y = oy + gy;
+        if (x >= 0 && x < cols && y >= 0 && y < rows) {
+          alive[y * cols + x] = 1; orig[y * cols + x] = 1;
         }
-      }
-      offsetX += 6;
+      }));
+      ox += CHAR_W;
     }
-  }
-}
-
-function initName() {
-  grid = Array(cols).fill().map(() => Array(rows).fill(0));
-  const lines = ["JOSHUA", "BRENDAN", "MELANDER"];
-  const lineHeight = 10;
-  const startY = Math.floor((rows - lines.length * lineHeight) / 2);
-  lines.forEach((text, i) => {
-    const startX = Math.floor((cols - text.length * 6) / 2);
-    drawText(text, startX, startY + i * lineHeight);
   });
 }
 
 function step() {
-  const next = grid.map((col, x) =>
-    col.map((cell, y) => {
-      let n = 0;
-      for (let i = -1; i <= 1; i++)
-        for (let j = -1; j <= 1; j++) {
-          if (i === 0 && j === 0) continue;
-          n += grid[(x + i + cols) % cols][(y + j + rows) % rows];
-        }
-      if (cell && (n < 2 || n > 3)) return 0;
-      if (!cell && n === 3) return 1;
-      return cell;
-    })
-  );
-  grid = next;
+  for (let y = 0; y < rows; y++) {
+    const ym = ((y - 1 + rows) % rows) * cols, y0 = y * cols, yp = ((y + 1) % rows) * cols;
+    for (let x = 0; x < cols; x++) {
+      const xm = (x - 1 + cols) % cols, xp = (x + 1) % cols;
+      const n = alive[ym + xm] + alive[ym + x] + alive[ym + xp]
+              + alive[y0 + xm]                 + alive[y0 + xp]
+              + alive[yp + xm] + alive[yp + x] + alive[yp + xp];
+      const i = y0 + x;
+      const a = alive[i] ? (n === 2 || n === 3) : (n === 3);
+      next[i] = a ? 1 : 0;
+      if (!a) orig[i] = 0;   // lineage broken: never bright again
+    }
+  }
+  [alive, next] = [next, alive];
 }
 
 function draw() {
   ctx.fillStyle = '#000';
   ctx.fillRect(0, 0, canvas.width, canvas.height);
-  ctx.fillStyle = '#0f0';
-  for (let x = 0; x < cols; x++)
-    for (let y = 0; y < rows; y++)
-      if (grid[x][y]) ctx.fillRect(x * cellSize, y * cellSize, cellSize - 1, cellSize - 1);
+  ctx.fillStyle = DIM;
+  for (let i = 0; i < alive.length; i++)
+    if (alive[i] && !orig[i]) ctx.fillRect((i % cols) * CELL, ((i / cols) | 0) * CELL, CELL - 1, CELL - 1);
+  ctx.fillStyle = BRIGHT;
+  for (let i = 0; i < alive.length; i++)
+    if (alive[i] && orig[i]) ctx.fillRect((i % cols) * CELL, ((i / cols) | 0) * CELL, CELL - 1, CELL - 1);
 }
 
-// ── Headshot GoL (below) ────────────────────────────────────────────────────
-const headshotImg = document.getElementById('headshotImg');
-const hCanvas = document.getElementById('headshotCanvas');
-const hCtx = hCanvas.getContext('2d');
-const hCellSize = 4;
-let hCols = 0, hRows = 0;
-let hGrid = null;
-
-function stepHeadshot() {
-  const next = hGrid.map((col, x) =>
-    col.map((cell, y) => {
-      let n = 0;
-      for (let i = -1; i <= 1; i++)
-        for (let j = -1; j <= 1; j++) {
-          if (i === 0 && j === 0) continue;
-          n += hGrid[(x + i + hCols) % hCols][(y + j + hRows) % hRows];
-        }
-      if (cell && (n < 2 || n > 3)) return 0;
-      if (!cell && n === 3) return 1;
-      return cell;
-    })
-  );
-  hGrid = next;
-}
-
-function drawHeadshot() {
-  hCtx.fillStyle = '#000';
-  hCtx.fillRect(0, 0, hCanvas.width, hCanvas.height);
-  hCtx.fillStyle = '#0f0';
-  for (let x = 0; x < hCols; x++)
-    for (let y = 0; y < hRows; y++)
-      if (hGrid[x][y]) hCtx.fillRect(x * hCellSize, y * hCellSize, hCellSize - 1, hCellSize - 1);
-}
-
-// ── Main loop ───────────────────────────────────────────────────────────────
 function loop() {
-  if (running) {
-    step();
-    if (hGrid) stepHeadshot();
-  }
-  draw();
-  if (hGrid) drawHeadshot();
+  if (running) { step(); draw(); }
   setTimeout(loop, 100);
 }
 
-// ── Mouse interaction (name canvas) ────────────────────────────────────────
-let isDrawing = false;
-canvas.addEventListener('mousedown', (e) => { isDrawing = true; paintCell(e); });
-canvas.addEventListener('mouseup', () => isDrawing = false);
-canvas.addEventListener('mouseleave', () => isDrawing = false);
-canvas.addEventListener('mousemove', (e) => { if (isDrawing) paintCell(e); });
-
-function paintCell(e) {
-  const rect = canvas.getBoundingClientRect();
-  const x = Math.floor((e.clientX - rect.left) / cellSize);
-  const y = Math.floor((e.clientY - rect.top) / cellSize);
-  if (x >= 0 && x < cols && y >= 0 && y < rows) grid[x][y] = 1;
-}
-
-// ── Controls ────────────────────────────────────────────────────────────────
+// ── Controls ───────────────────────────────────────────────────────────────
 const playBtn = document.getElementById('playBtn');
-
 playBtn.onclick = function() {
   running = !running;
   this.classList.toggle('playing', running);
+  if (!running) { build(); draw(); }   // reset the board
 };
 
-document.getElementById('resetBtn').onclick = function() {
-  running = false;
-  playBtn.classList.remove('playing');
-  hGrid = null;
-  hCanvas.style.display = 'none';
-  headshotImg.style.display = 'block';
-  initName();
-};
-
-document.getElementById('photoBtn').onclick = function() {
-  if (hGrid !== null) {
-    // toggle back to photo
-    hGrid = null;
-    hCanvas.style.display = 'none';
-    headshotImg.style.display = 'block';
-    return;
-  }
-
-  fetch('headshot.jpg')
-    .then(r => r.blob())
-    .then(blob => {
-      const url = URL.createObjectURL(blob);
-      const img = new Image();
-      img.onload = function() {
-        URL.revokeObjectURL(url);
-
-        // Size canvas to match image aspect ratio at half the grid width
-        const aspect = img.naturalHeight / img.naturalWidth;
-        hCanvas.width = 300;
-        hCanvas.height = Math.round(300 * aspect);
-        hCols = Math.floor(hCanvas.width / hCellSize);
-        hRows = Math.floor(hCanvas.height / hCellSize);
-
-        // Sample image into cell grid
-        const offCanvas = document.createElement('canvas');
-        offCanvas.width = hCols;
-        offCanvas.height = hRows;
-        const offCtx = offCanvas.getContext('2d', { willReadFrequently: true });
-        offCtx.drawImage(img, 0, 0, hCols, hRows);
-        const imageData = offCtx.getImageData(0, 0, hCols, hRows);
-
-        // Grayscale
-        const gray = new Float32Array(hCols * hRows);
-        for (let i = 0; i < hCols * hRows; i++) {
-          gray[i] = imageData.data[i*4] * 0.299 + imageData.data[i*4+1] * 0.587 + imageData.data[i*4+2] * 0.114;
-        }
-
-        // Floyd-Steinberg dithering
-        hGrid = Array(hCols).fill().map(() => Array(hRows).fill(0));
-        for (let y = 0; y < hRows; y++) {
-          for (let x = 0; x < hCols; x++) {
-            const idx = y * hCols + x;
-            const old = gray[idx];
-            const val = old > 128 ? 255 : 0;
-            hGrid[x][y] = val > 128 ? 1 : 0;
-            const err = old - val;
-            if (x + 1 < hCols)          gray[idx + 1]          += err * 7/16;
-            if (y + 1 < hRows) {
-              if (x > 0)                gray[idx + hCols - 1]  += err * 3/16;
-                                        gray[idx + hCols]      += err * 5/16;
-              if (x + 1 < hCols)       gray[idx + hCols + 1]  += err * 1/16;
-            }
-          }
-        }
-
-        headshotImg.style.display = 'none';
-        hCanvas.style.display = 'block';
-      };
-      img.src = url;
-    })
-    .catch(e => console.error('Failed to load headshot:', e));
-};
-
-// ── Init ────────────────────────────────────────────────────────────────────
-initName();
-loop();
-
-const tooltip = document.getElementById('tooltip');
-canvas.addEventListener('mousemove', (e) => {
-  tooltip.style.display = 'block';
-  tooltip.style.left = (e.clientX + 14) + 'px';
-  tooltip.style.top = (e.clientY + 14) + 'px';
+// Rebuild only when the layout width changes (ignore mobile URL-bar resizes)
+window.addEventListener('resize', () => {
+  if (document.documentElement.clientWidth !== builtWidth) { build(); draw(); }
 });
-canvas.addEventListener('mouseleave', () => { tooltip.style.display = 'none'; });
+
+// ── Init ───────────────────────────────────────────────────────────────────
+function init() { build(); draw(); loop(); }
+if (document.readyState === 'complete') init();
+else window.addEventListener('load', init);
 </script>
 
 </body>
